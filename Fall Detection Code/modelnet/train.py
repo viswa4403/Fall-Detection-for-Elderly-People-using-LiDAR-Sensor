@@ -3,7 +3,8 @@ import copy
 import numpy as np
 import math
 import sys
-sys.path.append(("/content/SO-Net"))
+import matplotlib.pyplot as plt
+sys.path.append(("/content/Fall-Detection-for-Elderly-People-using-LiDAR-Sensor/Fall Detection Code"))
 
 from modelnet.options import Options
 opt = Options().parse()  # set CUDA_VISIBLE_DEVICES before import torch
@@ -35,13 +36,18 @@ if __name__=='__main__':
     if opt.pretrain is not None:
         model.encoder.load_state_dict(torch.load(opt.pretrain))
     ############################# automation for ModelNet10 / 40 configuration ####################
-    if opt.classes == 10:
+    if opt.classes == 4:
         opt.dropout = opt.dropout + 0.1
     ############################# automation for ModelNet10 / 40 configuration ####################
 
     #visualizer = Visualizer(opt)
 
     best_accuracy = 0
+    test_accuracies = []
+    train_accuracies_list=[]
+    train_losses_list=[]
+    test_losses_list=[]
+    epoch_list=[]
     for epoch in range(301):
 
         epoch_iter = 0
@@ -62,7 +68,13 @@ if __name__=='__main__':
 
                 #visualizer.print_current_errors(epoch, epoch_iter, errors, t)
                 #visualizer.plot_current_errors(epoch, float(epoch_iter) / dataset_size, opt, errors)
-
+                #print("epoch no:",epoch,"error:", errors)
+                epoch_list.append(epoch)
+                test_accuracies.append(errors['test_accuracy'])
+                train_accuracies_list.append(errors['train_accuracy'])
+                train_losses_list.append(errors['train_loss'])
+                test_losses_list.append(errors['test_loss'])
+                #print("now",errors['train_loss'])
                 # print(model.autoencoder.encoder.feature)
                 # visuals = model.get_current_visuals()
                 # visualizer.display_current_results(visuals, epoch, i)
@@ -81,19 +93,22 @@ if __name__=='__main__':
 
                 # # accumulate loss
                 model.test_loss += model.loss.detach() * input_label.size()[0]
-
+                
                 # # accumulate accuracy
                 _, predicted_idx = torch.max(model.score.data, dim=1, keepdim=False)
                 correct_mask = torch.eq(predicted_idx, model.input_label).float()
                 test_accuracy = torch.mean(correct_mask).cpu()
                 model.test_accuracy += test_accuracy * input_label.size()[0]
-
+                #print("test_accuracy in particular epoch",model.test_accuracy.item(),"test_loss",model.test_loss)
             model.test_loss /= batch_amount
             model.test_accuracy /= batch_amount
             if model.test_accuracy.item() > best_accuracy:
                 best_accuracy = model.test_accuracy.item()
-            print('Tested network. So far best: %f' % best_accuracy)
+            #test_accuracies.append(model.test_accuracy.item())
+            #print("test_accuracy in that epoch",model.test_accuracy.item())
+            #print("test_accuracy in particular epoch",model.test_accuracy.item(),"test_loss",model.test_loss)
 
+            print('Tested network. So far best: %f' % best_accuracy)   
             # save network
             if opt.classes == 10:
                 saving_acc_threshold = 0.930
@@ -119,12 +134,48 @@ if __name__=='__main__':
             opt.bn_momentum_decay ** (next_epoch // opt.bn_momentum_decay_step))
             print('BN momentum updated to: %f' % current_bn_momentum)
 
+    '''plt.plot(test_accuracies, label='Test Accuracy')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.title('Test Accuracy Over Epochs')
+    plt.legend()
+    plt.savefig('test_accuracy_plot.png')
+    plt.close() '''
+    plt.plot(epoch_list, train_accuracies_list, label='Train Accuracy')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.title('Train Accuracy Over Epochs')
+    plt.legend()
+    plt.savefig('train_accuracy_plot.png')
+    plt.close()
+
+    # Plot and save Test Accuracy vs Epoch
+    plt.plot(epoch_list, test_accuracies, label='Test Accuracy')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.title('Test Accuracy Over Epochs')
+    plt.legend()
+    plt.savefig('test_accuracy_plot.png')
+    plt.close()
+
+    # Plot and save Train Loss vs Epoch
+    plt.plot(epoch_list, train_losses_list, label='Train Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Train Loss Over Epochs')
+    plt.legend()
+    plt.savefig('train_loss_plot.png')
+    plt.close()
+
+    # Plot and save Test Loss vs Epoch
+    plt.plot(epoch_list, test_losses_list, label='Test Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Test Loss Over Epochs')
+    plt.legend()
+    plt.savefig('test_loss_plot.png')
+    plt.close()
         # save network
         # if epoch%20==0 and epoch>0:
         #     print("Saving network...")
         #     model.save_network(model.classifier, 'cls', '%d' % epoch, opt.gpu_id)
-
-
-
-
-
