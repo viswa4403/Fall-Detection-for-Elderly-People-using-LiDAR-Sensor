@@ -13,8 +13,9 @@ class Visualizer():
         self.win_size = opt.display_winsize
         self.name = opt.name
         if self.display_id > 0:
-            import visdom
-            self.vis = visdom.Visdom()
+            pass
+            #import visdom
+            #self.vis = visdom.Visdom()
 
         if self.use_html:
             self.web_dir = os.path.join(opt.checkpoints_dir, opt.name, 'web')
@@ -65,7 +66,7 @@ class Visualizer():
             self.plot_data = {'X':[],'Y':[], 'legend':list(errors.keys())}
         self.plot_data['X'].append(epoch + counter_ratio)
         self.plot_data['Y'].append([errors[k] for k in self.plot_data['legend']])
-        self.vis.line(
+        '''self.vis.line(
             X=np.stack([np.array(self.plot_data['X'])]*len(self.plot_data['legend']),1),
             Y=np.array(self.plot_data['Y']),
             opts={
@@ -73,7 +74,7 @@ class Visualizer():
                 'legend': self.plot_data['legend'],
                 'xlabel': 'epoch',
                 'ylabel': 'loss'},
-            win=self.display_id)
+            win=self.display_id)'''
 
     # errors: same format as |errors| of plotCurrentErrors
     def print_current_errors(self, epoch, i, errors, t):
